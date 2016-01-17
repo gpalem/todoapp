@@ -14,11 +14,11 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 
-import org.apache.commons.io.FileUtils;
+import com.activeandroid.query.Delete;
+import com.activeandroid.query.Select;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -34,6 +34,8 @@ public class MainActivity extends AppCompatActivity {
     private EditText etEnterItem;
     private Button btnAddItem;
 
+    private String taskToEdit;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,9 +49,9 @@ public class MainActivity extends AppCompatActivity {
         lvItems.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                todoItems.remove(position);
-                aToDoAdapter.notifyDataSetChanged();
-                writeItems();
+                String deleteTask = todoItems.get(position);
+                aToDoAdapter.remove(deleteTask);
+                deleteItemDB(deleteTask);
                 return true;
             }
         });
@@ -58,7 +60,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Intent editIntent = new Intent(MainActivity.this, EditItem.class);
-                editIntent.putExtra("edit_item", todoItems.get(position));
+                taskToEdit = todoItems.get(position);
+                editIntent.putExtra("edit_item", taskToEdit);
                 editIntent.putExtra("position", position);
                 startActivityForResult(editIntent, EDIT_REQUEST_CODE);
             }
@@ -70,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void populateArrayItems() {
         Log.d(TAG, "populateArrayItems");
-        readItems();
+        readItemsDB();
         aToDoAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, todoItems);
     }
     @Override
@@ -97,9 +100,10 @@ public class MainActivity extends AppCompatActivity {
 
     public void onAddItem(View view) {
         Log.d(TAG, "onAddItem");
-        aToDoAdapter.add(etEnterItem.getText().toString());
+        String task = etEnterItem.getText().toString();
+        aToDoAdapter.add(task);
         etEnterItem.setText("");
-        writeItems();
+        addItemDB(task, Priority.HIGH);
     }
 
     @Override
@@ -109,36 +113,41 @@ public class MainActivity extends AppCompatActivity {
             int position = data.getExtras().getInt("position");
             todoItems.set(position, task);
             aToDoAdapter.notifyDataSetChanged();
-            writeItems();
+            modifyItemDB(taskToEdit, task, Priority.HIGH);
         }
     }
 
-    private void readItems() {
-        Log.d(TAG, "readItems");
-        File filesDir = getFilesDir();
-        File file = new File(filesDir, "todo.txt");
-        try {
-            if (!file.exists()) {
-                file.createNewFile();
-            }
-            todoItems = new ArrayList<String>(FileUtils.readLines(file));
-        } catch (IOException e) {
-            Log.i(TAG, "read items failed!");
+    private void readItemsDB() {
+        Log.i(TAG, "readItemsDB");
+        List<TasksModel> taskList = new Select().from(TasksModel.class).execute();
+        todoItems = new ArrayList<String>();
+        for (TasksModel task : taskList) {
+            todoItems.add(task.task);
         }
     }
 
-    private void writeItems() {
-        Log.d(TAG, "writeItems");
-        File filesDir = getFilesDir();
-        File file = new File(filesDir, "todo.txt");
+    private void addItemDB(String task, Priority priority) {
+        TasksModel row = new TasksModel(task, priority);
+        row.save();
+    }
 
+    private void deleteItemDB(String task) {
         try {
-            if (!file.exists()) {
-                file.createNewFile();
-            }
-            FileUtils.writeLines(file, todoItems);
-        } catch (IOException e) {
-            Log.i(TAG, "write items failed!");
+            new Delete().from(TasksModel.class).where("Task = ?", task).execute();
+        } catch (Exception e) {
+            Log.e(TAG, "delete item from Database failed - " + task);
+        }
+    }
+
+    private void modifyItemDB(String oldTask, String newTask, Priority priority) {
+        Log.i(TAG, "modifyItemDB: " + oldTask);
+        try {
+            TasksModel row = new Select().from(TasksModel.class).where("Task = ?", oldTask).executeSingle();
+            row.task = newTask;
+            row.priority = priority;
+            row.save();
+        } catch (Exception e) {
+            Log.e(TAG, "update row failed - " + oldTask);
         }
     }
 }
