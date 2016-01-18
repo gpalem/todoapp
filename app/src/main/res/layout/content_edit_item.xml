@@ -30,14 +30,27 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
 
-    <Button
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:onClick="onSave"
-        android:text="@string/edit_text_save"
-        android:id="@+id/btnSave"
-        android:layout_marginTop="40dp"
-        android:layout_below="@+id/etEditItem"
+        android:text="@string/priority_text"
+        android:id="@+id/priority"
+        android:layout_alignTop="@+id/npPriority"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="80dp"
+        android:layout_toLeftOf="@+id/npPriority"
+        android:layout_toStartOf="@+id/npPriority"
+        android:textSize="20dp" />
+
+    <NumberPicker
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/npPriority"
+        android:layout_marginLeft="60dp"
+        android:layout_marginStart="60dp"
+        android:layout_below="@+id/etEditItem"
+        android:layout_toRightOf="@+id/tvEditItem"
+        android:layout_toEndOf="@+id/tvEditItem" />
+
 </RelativeLayout>

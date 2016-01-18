@@ -4,14 +4,19 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.view.View;
-import android.widget.Button;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.EditText;
+import android.widget.NumberPicker;
 
 public class EditItem extends AppCompatActivity {
 
+    private String TAG = EditItem.class.getName();
+
     private EditText etEditItem;
-    private Button btnSave;
+    private NumberPicker npPriority;
+
     private final int SAVE_REQUEST_CODE = 1;
     private int position;
 
@@ -23,18 +28,44 @@ public class EditItem extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         etEditItem = (EditText) findViewById(R.id.etEditItem);
-        btnSave = (Button) findViewById(R.id.btnSave);
+        npPriority = (NumberPicker) findViewById(R.id.npPriority);
+        npPriority.setMinValue(Priority.LOW.ordinal());
+        npPriority.setMaxValue(Priority.HIGH.ordinal());
+        npPriority.setDisplayedValues(new String[]{"LOW", "MEDIUM", "HIGH"});
+        npPriority.setWrapSelectorWheel(false);
 
         etEditItem.setText(getIntent().getStringExtra("edit_item"));
         etEditItem.setSelection(etEditItem.getText().length());
+        npPriority.setValue(getIntent().getIntExtra("edit_priority", 0));
         position = getIntent().getIntExtra("position", 0);
+        Log.i(TAG, "intents " + getIntent().getExtras().toString());
     }
 
-    public void onSave(View view) {
-        Intent saveIntent = new Intent(EditItem.this, MainActivity.class);
-        saveIntent.putExtra("save_item", etEditItem.getText().toString());
-        saveIntent.putExtra("position", position);
-        setResult(SAVE_REQUEST_CODE, saveIntent);
-        finish();
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_save, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.save_icon) {
+            Intent saveIntent = new Intent(EditItem.this, MainActivity.class);
+            saveIntent.putExtra("save_item", etEditItem.getText().toString());
+            saveIntent.putExtra("save_priority", npPriority.getValue());
+            saveIntent.putExtra("position", position);
+            setResult(SAVE_REQUEST_CODE, saveIntent);
+            finish();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 }

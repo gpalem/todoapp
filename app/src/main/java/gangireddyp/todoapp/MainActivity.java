@@ -10,8 +10,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ListView;
 
 import com.activeandroid.query.Delete;
@@ -27,14 +25,14 @@ public class MainActivity extends AppCompatActivity {
     private final int EDIT_REQUEST_CODE = 1;
     private final int EDIT_REQUEST_OK = 1;
 
-    private ArrayList<String> todoItems;
-    private ArrayAdapter<String> aToDoAdapter;
+    private final int ADD_REQUEST_CODE = 2;
+    private final int ADD_REQUEST_OK = 2;
+
+    private ArrayList<TodoItem> todoItems;
+    private ArrayAdapter<TodoItem> aToDoAdapter;
     private ListView lvItems;
 
-    private EditText etEnterItem;
-    private Button btnAddItem;
-
-    private String taskToEdit;
+    private TodoItem taskToEdit;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
         lvItems.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                String deleteTask = todoItems.get(position);
+                TodoItem deleteTask = todoItems.get(position);
                 aToDoAdapter.remove(deleteTask);
                 deleteItemDB(deleteTask);
                 return true;
@@ -61,21 +59,21 @@ public class MainActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Intent editIntent = new Intent(MainActivity.this, EditItem.class);
                 taskToEdit = todoItems.get(position);
-                editIntent.putExtra("edit_item", taskToEdit);
+                editIntent.putExtra("edit_item", taskToEdit.task);
+                editIntent.putExtra("edit_priority", taskToEdit.priority.ordinal());
                 editIntent.putExtra("position", position);
                 startActivityForResult(editIntent, EDIT_REQUEST_CODE);
             }
         });
 
-        etEnterItem = (EditText) findViewById(R.id.etEnterItem);
-        btnAddItem = (Button) findViewById(R.id.btnAddItem);
     }
 
     public void populateArrayItems() {
         Log.d(TAG, "populateArrayItems");
         readItemsDB();
-        aToDoAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, todoItems);
+        aToDoAdapter = new CustomAdapter(this, todoItems);
     }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -91,38 +89,40 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.add_icon) {
+            Intent addIntent = new Intent(MainActivity.this, AddItem.class);
+            startActivityForResult(addIntent, ADD_REQUEST_CODE);
             return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
 
-    public void onAddItem(View view) {
-        Log.d(TAG, "onAddItem");
-        String task = etEnterItem.getText().toString();
-        aToDoAdapter.add(task);
-        etEnterItem.setText("");
-        addItemDB(task, Priority.HIGH);
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == EDIT_REQUEST_OK && requestCode == EDIT_REQUEST_CODE) {
             String task = data.getExtras().getString("save_item");
+            Priority p = Priority.values()[data.getExtras().getInt("save_priority")];
+            TodoItem newItem = new TodoItem(task, p);
             int position = data.getExtras().getInt("position");
-            todoItems.set(position, task);
+            todoItems.set(position, newItem);
             aToDoAdapter.notifyDataSetChanged();
-            modifyItemDB(taskToEdit, task, Priority.HIGH);
+            modifyItemDB(taskToEdit, newItem);
+        }
+        else if (resultCode == ADD_REQUEST_OK && requestCode == ADD_REQUEST_CODE) {
+            String task = data.getExtras().getString("add_item");
+            Priority p = Priority.values()[data.getExtras().getInt("add_priority")];
+            aToDoAdapter.add(new TodoItem(task, p));
+            addItemDB(task, p);
         }
     }
 
     private void readItemsDB() {
         Log.i(TAG, "readItemsDB");
         List<TasksModel> taskList = new Select().from(TasksModel.class).execute();
-        todoItems = new ArrayList<String>();
+        todoItems = new ArrayList<TodoItem>();
         for (TasksModel task : taskList) {
-            todoItems.add(task.task);
+            todoItems.add(new TodoItem(task.task, task.priority));
         }
     }
 
@@ -131,23 +131,23 @@ public class MainActivity extends AppCompatActivity {
         row.save();
     }
 
-    private void deleteItemDB(String task) {
+    private void deleteItemDB(TodoItem item) {
         try {
-            new Delete().from(TasksModel.class).where("Task = ?", task).execute();
+            new Delete().from(TasksModel.class).where("Task = ?", item.task).execute();
         } catch (Exception e) {
-            Log.e(TAG, "delete item from Database failed - " + task);
+            Log.e(TAG, "delete item from Database failed - " + item.task);
         }
     }
 
-    private void modifyItemDB(String oldTask, String newTask, Priority priority) {
-        Log.i(TAG, "modifyItemDB: " + oldTask);
+    private void modifyItemDB(TodoItem oldTask, TodoItem newTask) {
+        Log.i(TAG, "modifyItemDB: " + oldTask.task);
         try {
-            TasksModel row = new Select().from(TasksModel.class).where("Task = ?", oldTask).executeSingle();
-            row.task = newTask;
-            row.priority = priority;
+            TasksModel row = new Select().from(TasksModel.class).where("Task = ?", oldTask.task).executeSingle();
+            row.task = newTask.task;
+            row.priority = newTask.priority;
             row.save();
         } catch (Exception e) {
-            Log.e(TAG, "update row failed - " + oldTask);
+            Log.e(TAG, "update row failed - " + oldTask.task);
         }
     }
 }

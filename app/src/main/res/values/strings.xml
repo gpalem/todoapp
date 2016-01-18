@@ -1,9 +1,13 @@
 <resources>
-    <string name="app_name">SimpleTodo</string>
+    <string name="app_name">Errand</string>
     <string name="action_settings">Settings</string>
     <string name="enter_item">Enter a new item</string>
-    <string name="add_item">ADD ITEM</string>
-    <string name="title_activity_edit_item">Edit Item</string>
+    <string name="add">ADD</string>
+    <string name="add_item">ADD</string>
+    <string name="save">SAVE</string>
+    <string name="title_activity_edit_item">Errand</string>
     <string name="edit_item_view">Edit Item Below:</string>
     <string name="edit_text_save">Save</string>
+    <string name="title_activity_add_item">Errand</string>
+    <string name="priority_text"> Priority:</string>
 </resources>
