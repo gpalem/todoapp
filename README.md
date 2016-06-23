@@ -4,7 +4,7 @@ This is an Android application to build and manage your TODO tasks. Currently th
 
 Submitted by: Gangi Palem
 
-Time spent: 1.5 hours spent in total
+Time spent: 8 hours spent in total
 
 The following **required** functionality is completed:
 
